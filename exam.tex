@@ -1,0 +1,357 @@
+\documentclass{article}
+
+\usepackage{url}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{amsmath}
+
+\lstset{ 
+  backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}; should come as last argument
+  basicstyle=\footnotesize,        % the size of the fonts that are used for the code
+  breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+  breaklines=true,                 % sets automatic line breaking
+  captionpos=b,                    % sets the caption-position to bottom
+  commentstyle=\color{green},    % comment style
+  deletekeywords={...},            % if you want to delete keywords from the given language
+  escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
+  extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+  frame=single,	                   % adds a frame around the code
+  keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+  keywordstyle=\color{blue},       % keyword style
+  language=Python,                 % the language of the code
+  morekeywords={*,...},            % if you want to add more keywords to the set
+  numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+  numbersep=5pt,                   % how far the line-numbers are from the code
+  numberstyle=\tiny\color{gray}, % the style that is used for the line-numbers
+  rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
+  showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+  showstringspaces=false,          % underline spaces within strings only
+  showtabs=false,                  % show tabs within strings adding particular underscores
+  stepnumber=2,                    % the step between two line-numbers. If it's 1, each line will be numbered
+  stringstyle=\color{purple},     % string literal style
+  tabsize=2,	                   % sets default tabsize to 2 spaces
+  title=\lstname                   % show the filename of files included with \lstinputlisting; also try caption instead of title
+}
+
+\renewcommand{\thesection}{\alph{section})}
+
+\begin{document}
+\section{The metric}
+We have a static, isotropic metric.
+That is, there is no $t$-dependence and it is invariant under rotation.
+Denote our coordinates with $x^\mu = (t, r, \theta, \phi)$.
+We assume 1+3 dimensions, one temporal and three spatial.
+Isotropic in spatial part, means we have a SO(3) group (ie. a ``sphere'').
+Thus, the metric must contain
+$$
+g_\Omega = d\theta^2 + \sin^2\theta d\phi^2.
+$$
+
+We write our metric as
+$$
+ds^2 = g(r) + \gamma(r) g_\Omega,
+$$
+where there is no $t$-dependence due to it being static.
+Also, the angular dependence is entirely contained in $g_\Omega$, to not break isotropy.
+Thus, $g$ is on the form
+$$
+g(r) = g_{\mu \nu} dx^\mu dx^\nu, \quad \mu, \nu \in \{t, r\}.
+$$
+Any cross terms between $dt$ and $dr$ will break time reversal, as one will get something on the form
+$$
+ds^2 = dt^2 + dt dr + dr^2 = (\frac{dt}{dr}^2 + \frac{dt}{dr} + 1) dr^2.
+$$
+As the second term is not quadratic in $dt$, it changes sign on time reversal,  breaking the symmetry.
+Thus, there can be no cross terms.
+Our metric is thus
+$$
+ds^2 = A(r) dt^2 - B(r) dr^2 + \gamma(r) (d\theta^2 + \sin^2\theta d\phi^2).
+$$
+Signs were chosen by convention.
+As we have no constraints on ``r'', we may choose it as we wish. We choose it such that
+$$
+ds^2 = A(r) dt^2 - B(r) dr^2 - r^2 (d\theta^2 + \sin^2\theta d\phi^2).
+$$
+
+\section{Ricci tensor}
+We will here use the framework ``differentialGeometry3'' provided through the course webpage, \url{http://web.phys.ntnu.no/~mika/QF/software.html}.
+
+\begin{lstlisting}
+import numpy as np
+import sympy
+from differentialGeometry3 import computeGeometry, printGeometry, determinantg, ginv
+from IPython.display import display, Math
+
+def displayNonZero(T):
+    """Displays the non-zero components of the tensor T
+    Also assumes to be inside iPython or Jupyter, to
+    use the `display` function"""
+    for index, element in np.ndenumerate(T):
+        if element != 0:
+            print(index)
+            display(sympy.simplify(element))
+
+
+# Define our coordinates
+t, r, theta, phi = sympy.symbols('t r theta phi')
+coords = np.array([t, r, theta, phi])
+A = sympy.Function('A')(r)
+B = sympy.Function('B')(r)
+
+# Construct the tensor
+g_ = np.zeros((4, 4),dtype=object)
+g_[0,0] = A
+g_[1,1] = -B
+g_[2,2] = -r**2
+g_[3,3] = -r**2 * sympy.sin(theta)**2
+
+geometry = computeGeometry(g_,coords)
+
+# Ricci
+r4i_ = geometry[7]
+
+# Ricci is diagonal
+for ele in np.diag(r4i_):
+    display(sympy.simplify(ele))
+    print("----")
+\end{lstlisting}
+Which outputs
+$$
+\displaystyle \frac{\frac{d^{2}}{d r^{2}} A{\left(r \right)}}{2 A{\left(r \right)}} - \frac{\frac{d}{d r} A{\left(r \right)} \frac{d}{d r} B{\left(r \right)}}{4 A{\left(r \right)} B{\left(r \right)}} - \frac{\left(\frac{d}{d r} A{\left(r \right)}\right)^{2}}{4 A^{2}{\left(r \right)}} - \frac{\frac{d}{d r} B{\left(r \right)}}{r B{\left(r \right)}}
+$$
+---
+$$
+\displaystyle \frac{\frac{d^{2}}{d r^{2}} A{\left(r \right)}}{2 A{\left(r \right)}} - \frac{\frac{d}{d r} A{\left(r \right)} \frac{d}{d r} B{\left(r \right)}}{4 A{\left(r \right)} B{\left(r \right)}} - \frac{\left(\frac{d}{d r} A{\left(r \right)}\right)^{2}}{4 A^{2}{\left(r \right)}} - \frac{\frac{d}{d r} B{\left(r \right)}}{r B{\left(r \right)}}
+$$
+---
+$$
+\displaystyle - \frac{r \frac{d}{d r} B{\left(r \right)}}{2 B^{2}{\left(r \right)}} + \frac{r \frac{d}{d r} A{\left(r \right)}}{2 A{\left(r \right)} B{\left(r \right)}} - 1 + \frac{1}{B{\left(r \right)}}
+$$
+---
+$$
+\displaystyle \frac{\left(- r A{\left(r \right)} \frac{d}{d r} B{\left(r \right)} + r B{\left(r \right)} \frac{d}{d r} A{\left(r \right)} - 2 \left(B{\left(r \right)} - 1\right) A{\left(r \right)} B{\left(r \right)}\right) \sin^{2}{\left(\theta \right)}}{2 A{\left(r \right)} B^{2}{\left(r \right)}}
+$$
+
+Which as one can see, with a trivial amount of algebra, is exactly what we are supposed to show.
+
+\section{Maxwell equation}
+From the program mentioned above, we have $|g| = -r^4 A B \sin^2\theta$.
+The inhomogeneous Maxwell equation is
+$$
+\nabla_\mu F^{\mu \nu} = \frac{1}{\sqrt{|g|}} \partial\mu \left(\sqrt{|g|} F^{\mu \nu} \right) = j^\nu.
+$$
+We have that $F_{\mu \nu} = -E_\mu$, and from the isometric property $E_\theta = E_\phi = 0$ (which actually follows from the hairy ball theorem).
+$j^0 = \rho$, where $\rho$ is the charge density, which is zero everywhere except at the point charge.
+Thus
+$$
+\partial_\mu \left( \sqrt{|g|} F^{\mu 0} \right) = 0.
+$$
+Given that $E_r$ is the only non-zero component of $E$, and the relation between $F$ and $E$, we get
+$$
+\partial_r \left( i r^2 \sin\theta \sqrt{A B} F^{r 0} \right) = 0.
+$$
+Which we may write more conveniently as
+$$
+\partial_r \left(r^2 \sqrt{A B} F^{r 0} \right) = 0,
+$$
+so that
+$$
+r^2 \sqrt{A B} F^{r 0} = C
+$$
+where $C$ is some constant.
+Using
+$$
+F^{r 0} = g^{rr} F_{r 0} g^{00} = -\frac{F_{r 0}}{AB} = \frac{E_r}{AB},
+$$
+where we used that $g$ is diagonal, we conclude that
+$$
+r^2 \sqrt{A B} F^{r 0} = C \Rightarrow E_r = \frac{C \sqrt{AB}}{r^2}.
+$$
+
+Lastly remains determining $C$.
+As we move to $r \rightarrow \infty$, we must approach Minkowski space, that is $A = B = 1$.
+Thus, applying Gauss's law at large $r$, we simply get
+$$
+\int dS E(r) = Q,
+$$
+and we identify that $E = \frac{Q}{4\pi r^2}$.
+Comparing with our expression for $E$, we see that $C = \frac{Q}{4\pi}$.
+
+\section{Electromagnetic stress tensor and Einstein equations}
+Again, we make use of the aforementioned framework.
+The stress tensor is defined as
+$$
+T^{\mu \nu} = -F^{\mu \alpha} F^{\nu}_{\alpha} + \frac14 g^{\mu \nu} F_{\alpha \beta}F^{\alpha \beta}.
+$$
+We implement it in Python
+\begin{lstlisting}
+def stressTensor(F, g_):
+  """Compute stress tensor T from EM-field F"""
+  g = ginv(g_)
+  d = g_[:,0].size
+  T = np.zeros((d,d),dtype=object)
+  for mu in range(d):
+      for nu in range(d):
+          T[mu, nu] = F[mu, :] @ (g_ @ F)[:, nu] - sympy.Rational(1, 4) * g[mu, nu] * np.tensordot(g_ @ F @ g_, F)
+  
+          return T
+
+def lower(T):
+  """Lowers the indices of the (upper) tensor T"""
+  return g_ @ T @ g_
+\end{lstlisting}
+Here, we also defined the function \lstinline{lower} because we need the stress tensor with lower indices.
+Using our knowledge about $E$, and that there is no $B$-field, we construct $F$.
+$$
+F_{\mu \nu} =
+\begin{bmatrix}
+  0 & E_r & 0 & 0\\
+  -E_r & 0 & 0 & 0\\
+  0 & 0 & 0 & 0\\
+  0 & 0 & 0 & 0
+\end{bmatrix}
+$$
+
+Or, in Python code,
+\begin{lstlisting}
+F = np.zeros(g_.shape, dtype=object)
+Q = sympy.symbols('Q')
+E = sympy.sqrt(A * B) * Q / (4*sympy.pi*r**2)
+
+F[1, 0] = - E / (A * B)
+F[0, 1] = -F[1, 0]
+
+T = stressTensor(F, g_)
+T_ = lower(T)
+displayNonZero(T_)
+\end{lstlisting}
+Which outputs
+
+(0,0)
+$$
+\displaystyle - \frac{3Q^{2} A{\left(r \right)}}{32 \pi^{2} r^{4}}
+$$
+
+(1,1)
+$$
+\displaystyle \frac{3Q^{2} B{\left(r \right)}}{32 \pi^{2} r^{4}}
+$$
+
+(2,2)
+$$
+\displaystyle \frac{Q^{2}}{32 \pi^{2} r^{2}}
+$$
+
+(3,3)
+$$
+\displaystyle \frac{Q^{2} \sin^{2}{\left(\theta \right)}}{32 \pi^{2} r^{2}}
+$$
+
+Now, to show that the Einstein equation
+$$
+G_{\mu \nu} = -\kappa T_{\mu \nu}
+$$
+reduces to
+$$
+R_{\mu \nu} = - \kappa T_{\mu \nu}
+$$
+we must employ a trick.
+Firstly, note
+$$
+G_{\mu \nu} = R_{\mu \nu} - \frac12 R g_{\mu \nu}.
+$$
+
+Consider
+$$
+G_\mu^\nu = R_\mu^\nu - \frac12 R g_\mu^\nu = -\kappa T_\mu^\nu.
+$$
+If we take the trace on both sides, and denote by only the letter of the tensor its trace, we get
+$$
+R - 2R = -\kappa T = 0.
+$$
+We here used that the trace of $g$ is 4 ($g_\mu^\nu = \delta_\mu^\nu$), and that the electromagnetic stress tensor is traceless.
+Thus, $R = 0$, and the Einstein equation reduces as we wanted to show.
+Using our framework, we may find the explicit form of the (non-trivial) Einstein equations.
+\begin{lstlisting}
+k = sympy.Symbol("k")
+
+for i in range(4):
+    print(f``({i}, {i})'')
+    display(sympy.Eq(ricci_[i, i], -k * T_[i, i]))
+\end{lstlisting}
+Giving 
+
+(0,0)
+$$
+\displaystyle - \frac{\frac{d^{2}}{d r^{2}} A{\left(r \right)}}{2 B{\left(r \right)}} + \frac{\frac{d}{d r} A{\left(r \right)} \frac{d}{d r} B{\left(r \right)}}{4 B^{2}{\left(r \right)}} + \frac{\left(\frac{d}{d r} A{\left(r \right)}\right)^{2}}{4 A{\left(r \right)} B{\left(r \right)}} - \frac{\frac{d}{d r} A{\left(r \right)}}{r B{\left(r \right)}} = \frac{3Q^{2} k A{\left(r \right)}}{32 \pi^{2} r^{4}}
+$$
+
+(1,1)
+$$
+\displaystyle \frac{\frac{d^{2}}{d r^{2}} A{\left(r \right)}}{2 A{\left(r \right)}} - \frac{\frac{d}{d r} A{\left(r \right)} \frac{d}{d r} B{\left(r \right)}}{4 A{\left(r \right)} B{\left(r \right)}} - \frac{\left(\frac{d}{d r} A{\left(r \right)}\right)^{2}}{4 A^{2}{\left(r \right)}} - \frac{\frac{d}{d r} B{\left(r \right)}}{r B{\left(r \right)}} = - \frac{3Q^{2} k B{\left(r \right)}}{32 \pi^{2} r^{4}}
+$$
+
+(2,2)
+$$
+\displaystyle - \frac{r \frac{d}{d r} B{\left(r \right)}}{2 B^{2}{\left(r \right)}} + \frac{r \frac{d}{d r} A{\left(r \right)}}{2 A{\left(r \right)} B{\left(r \right)}} - 1 + \frac{1}{B{\left(r \right)}} = -\frac{Q^{2} k}{32 \pi^{2} r^{2}}
+$$
+
+(3,3)
+$$
+\displaystyle - \frac{r \sin^{2}{\left(\theta \right)} \frac{d}{d r} B{\left(r \right)}}{2 B^{2}{\left(r \right)}} + \frac{r \sin^{2}{\left(\theta \right)} \frac{d}{d r} A{\left(r \right)}}{2 A{\left(r \right)} B{\left(r \right)}} - \frac{\left(B{\left(r \right)} - 1\right) \sin^{2}{\left(\theta \right)}}{B{\left(r \right)}} = -\frac{Q^{2} k \sin^{2}{\left(\theta \right)}}{32 \pi^{2} r^{2}}
+$$
+
+\section{Finding the relation $AB$}
+We notice that taking
+$$
+B R_{00} + A R_{11} = -\kappa ( B T_{00} + A T_{11})
+$$
+vastly simplifies our expression, as the right hand site is zero.
+Thus, after computing the LHS
+$$
+\displaystyle - \frac{A{\left(r \right)} \frac{d}{d r} B{\left(r \right)}}{r B{\left(r \right)}} - \frac{\frac{d}{d r} A{\left(r \right)}}{r} = 0.
+$$
+Multiplying away $r$ and raising the $B$, we recognize this as simply
+$$
+\frac{d}{dr} \left( AB \right) = 0.
+$$
+
+As we may rescale our $t$ as we want, we get
+$$
+AB = const = 1.
+$$
+
+\section{Determining $A$ and $B$}
+We have
+$$
+R_{22} = \frac1B - 1 + \frac{r}{2B} (\frac{A'}{A} - \frac{B'}{B}) = - \kappa T_{22}.
+$$
+Inserting $A=\frac1B$ and solving using our framework, we get
+\begin{align*}
+  B{\left(r \right)} &= \frac{32 \pi^{2} r^{2}}{C_{1} r + Q^{2} k + 32 \pi^{2} r^{2}} \\
+  A{\left(r \right)} &= \displaystyle \frac{C_{1}}{32 \pi^{2} r} + \frac{Q^{2} k}{32 \pi^{2} r^{2}} + 1
+\end{align*}
+We expect to regain the Schwarzschild solution as $Q \rightarrow 0$, so we have
+$$
+\lim_{Q\rightarrow 0} A{\left(r \right)} =  \frac{C_{1}}{32 \pi^{2} r} + 1 = 1 -\frac{2GM}{r}.
+$$
+We here inserted $g_{00}$ for the Schwarzschild metric.
+Thus, $C_1 = - 2GM \cdot 32\pi^2 = -64 G M \pi^2$.
+And we get, after inserting $\kappa = 8 \pi G$,
+\begin{align*}
+A(r) &=  1 - \frac{2 G M}{r} + \frac{G Q^{2}}{4 \pi r^{2}}\\
+B(r) &=  \left(1 - \frac{2 G M}{r} + \frac{G Q^{2}}{4 \pi r^{2}} \right)^{-1}\\
+\end{align*}
+
+\section{Singularities}
+Similarly to Schwarzschild, we get a singularity at $r=0$ from $g_{tt}$ and one in $g_{rr}$ from the denominator going to zero.
+Let us consider the second one, which comes from $B$.
+Since $B = A^{-1}$, we need to find the zeros of $A$.
+Simply solving using our framework, and with the help of sympy, we get that the zero points of $A$ are
+$$
+r = G M \left(1 \pm \sqrt{1 - \frac{Q^{2}}{4 \pi G M^{2}}}\right).
+$$
+We are happy to to see that for $Q\rightarrow 0$, this reduces to $r=0$ and $r=2GM$, which is as expected.
+
+
+\end{document}
